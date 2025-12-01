@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="application-name" content="Expense Tracker">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Budget Tracker">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#fbbf24">
+  
+  <!-- PWA Icons -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23fbbf24'/%3E%3Ctext x='96' y='135' text-anchor='middle' font-size='100' fill='%23000000'%3E💰%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%23fbbf24'/%3E%3Ctext x='96' y='135' text-anchor='middle' font-size='100' fill='%23000000'%3E💰%3C/text%3E%3C/svg%3E">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  
+  <title>Expense Tracker - Budget Manager</title>
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: contain;
+    }
+    
+    #root {
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React and Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then((reg) => console.log('SW registered'))
+          .catch((err) => console.log('SW failed', err));
+      });
+    }
+  </script>
+  
+  <!-- Expense Tracker App -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    
+    // Lucide React icons as inline components
+    const Wallet = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+      </svg>
+    );
+    
+    const TrendingDown = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/>
+        <polyline points="16 17 22 17 22 11"/>
+      </svg>
+    );
+    
+    const TrendingUp = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    );
+    
+    const Plus = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    );
+    
+    const Edit2 = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+      </svg>
+    );
+    
+    const Trash2 = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+    );
+    
+    const Check = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    );
+    
+    const X = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    );
+    
+    const List = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+    );
+    
+    const PieChart = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+        <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+      </svg>
+    );
+    
+    const CreditCard = ({ size = 24, color = "currentColor" }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    );
+
+    function ExpenseTracker() {
+      const [monthlyIncome, setMonthlyIncome] = useState(4000);
+      const [expenses, setExpenses] = useState({});
+      const [categories, setCategories] = useState([
+        { key: 'housing', label: 'Rent, Mortgage & Utilities', icon: '🏠' },
+        { key: 'transportation', label: 'Transportation (Car, Taxi, Transit)', icon: '🚗' },
+        { key: 'food', label: 'Food (Groceries, Eating Out, Coffee)', icon: '🍽️' },
+        { key: 'insurance', label: 'Insurance, Healthcare & Pension', icon: '🏥' },
+        { key: 'entertainment', label: 'Entertainment & Subscriptions', icon: '🎬' },
+        { key: 'education', label: 'Education, Reading & Courses', icon: '📚' },
+        { key: 'gifts', label: 'Gifts & Donations', icon: '🎁' },
+        { key: 'other', label: 'Non-Categorized / Other', icon: '📋' },
+        { key: 'investments', label: 'Investments', icon: '📈' }
+      ]);
+      const [currentPage, setCurrentPage] = useState('tracker');
+      
+      // Load saved data
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('expenseTrackerData');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.monthlyIncome !== undefined) setMonthlyIncome(parsed.monthlyIncome);
+            if (parsed.expenses) setExpenses(parsed.expenses);
+            if (parsed.categories) setCategories(parsed.categories);
+          }
+        } catch (error) {
+          console.error('Error loading data:', error);
+        }
+      }, []);
+      
+      // Save data
+      useEffect(() => {
+        try {
+          const dataToSave = { monthlyIncome, expenses, categories };
+          localStorage.setItem('expenseTrackerData', JSON.stringify(dataToSave));
+        } catch (error) {
+          console.error('Error saving data:', error);
+        }
+      }, [monthlyIncome, expenses, categories]);
+      
+      const totalExpenses = Object.values(expenses).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+      const remaining = monthlyIncome - totalExpenses;
+      
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          padding: '40px 20px 100px 20px',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {currentPage === 'tracker' ? (
+              <div style={{ textAlign: 'center', color: '#e2e8f0' }}>
+                <div style={{ marginBottom: '40px' }}>
+                  <Wallet size={40} color="#fbbf24" style={{ display: 'inline-block', marginBottom: '16px' }} />
+                  <h1 style={{ fontSize: '48px', fontWeight: '700', color: '#fbbf24', margin: '0 0 8px 0' }}>
+                    Expense Tracker
+                  </h1>
+                  <p style={{ color: '#94a3b8', margin: 0 }}>Track where your money goes</p>
+                </div>
+                
+                <div style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                  borderRadius: '20px',
+                  padding: '32px',
+                  marginBottom: '32px'
+                }}>
+                  <label style={{ display: 'block', color: '#bfdbfe', fontSize: '14px', marginBottom: '12px' }}>
+                    MONTHLY INCOME (AFTER TAX)
+                  </label>
+                  <input
+                    type="text"
+                    value={monthlyIncome || ''}
+                    onChange={(e) => setMonthlyIncome(parseFloat(e.target.value) || 0)}
+                    placeholder="$0.00"
+                    style={{
+                      width: '100%',
+                      fontSize: '48px',
+                      fontWeight: '700',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '16px 24px',
+                      color: '#ffffff',
+                      outline: 'none',
+                      fontFamily: 'monospace',
+                      textAlign: 'center'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                  <div style={{
+                    background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                    borderRadius: '16px',
+                    padding: '24px'
+                  }}>
+                    <div style={{ fontSize: '14px', color: '#fca5a5', marginBottom: '8px' }}>TOTAL EXPENSES</div>
+                    <div style={{ fontSize: '36px', fontWeight: '700', color: '#ffffff' }}>
+                      ${totalExpenses.toFixed(2)}
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    background: `linear-gradient(135deg, ${remaining >= 0 ? '#059669' : '#dc2626'} 0%, ${remaining >= 0 ? '#047857' : '#b91c1c'} 100%)`,
+                    borderRadius: '16px',
+                    padding: '24px'
+                  }}>
+                    <div style={{ fontSize: '14px', color: remaining >= 0 ? '#86efac' : '#fca5a5', marginBottom: '8px' }}>
+                      {remaining >= 0 ? 'REMAINING' : 'OVERSPENT'}
+                    </div>
+                    <div style={{ fontSize: '36px', fontWeight: '700', color: '#ffffff' }}>
+                      ${Math.abs(remaining).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                
+                <p style={{ color: '#64748b', fontSize: '14px' }}>
+                  💡 Your expense tracker is live! Add it to your iPhone home screen for quick access.
+                </p>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', color: '#e2e8f0' }}>
+                <PieChart size={40} color="#fbbf24" style={{ display: 'inline-block', marginBottom: '16px' }} />
+                <h1 style={{ fontSize: '48px', fontWeight: '700', color: '#fbbf24', margin: '0 0 8px 0' }}>
+                  Insights
+                </h1>
+                <p style={{ color: '#94a3b8' }}>Coming soon - visualizations and AI suggestions!</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Bottom Navigation */}
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderTop: '1px solid rgba(251, 191, 36, 0.2)',
+            padding: '12px 20px',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '60px'
+          }}>
+            <button
+              onClick={() => setCurrentPage('tracker')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 20px',
+                color: currentPage === 'tracker' ? '#fbbf24' : '#64748b'
+              }}
+            >
+              <CreditCard size={24} />
+              <span style={{ fontSize: '12px', fontWeight: '600' }}>Tracker</span>
+            </button>
+            
+            <button
+              onClick={() => setCurrentPage('insights')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 20px',
+                color: currentPage === 'insights' ? '#fbbf24' : '#64748b'
+              }}
+            >
+              <PieChart size={24} />
+              <span style={{ fontSize: '12px', fontWeight: '600' }}>Insights</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ExpenseTracker />);
+  </script>
+</body>
+</html>
